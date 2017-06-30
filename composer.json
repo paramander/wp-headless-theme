@@ -1,0 +1,15 @@
+{
+    "name": "paramander/wp-headless-theme",
+    "description": "Wordpress theme build to run the CMS headless",
+    "license": "GPLv2 or later",
+    "type": "wordpress-theme",
+    "authors": [
+        {
+            "name": "Mats Rietdijk",
+            "email": "mats@paramander.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
+
