@@ -1,5 +1,5 @@
 {
-    "name": "paramander/wp-headless-theme",
+    "name": "paramander/headless-theme",
     "description": "Wordpress theme build to run the CMS headless",
     "license": "GPLv2 or later",
     "type": "wordpress-theme",
