@@ -94,7 +94,7 @@ add_action( 'rest_api_init', function() {
     add_filter( 'acf/format_value/type=post_object', 'headless_theme_prepare_post_object_for_response' , 10, 3 );
     function headless_theme_prepare_post_object_for_response( $value, $post_id, $field ) {
         if ( $field['return_format'] !== 'object' ) {
-            return;
+            return $value;
         }
 
         if ( is_array( $value ) ) {
