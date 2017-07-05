@@ -90,4 +90,30 @@ add_action( 'rest_api_init', function() {
             return $response;
         }
     ) );
+
+    add_filter( 'acf/format_value/type=post_object', 'headless_theme_prepare_post_object_for_response' , 10, 3 );
+    function headless_theme_prepare_post_object_for_response( $value, $post_id, $field ) {
+        if ( $field['return_format'] !== 'object' ) {
+            return;
+        }
+
+        if ( is_array( $value ) ) {
+            $formatted = array();
+            foreach( $value as $post ) {
+                $formatted[] = headless_theme_rest_format_post( $post );
+            }
+
+            return $formatted;
+        } else {
+            return headless_theme_rest_format_post( $value );
+        }
+    };
 } );
+
+function headless_theme_rest_format_post( $post ) {
+    $dummy_request = new WP_REST_Request( 'GET', '/' );
+    $dummy_controller = new WP_REST_Posts_Controller( $post->post_type );
+    $response = $dummy_controller->prepare_item_for_response( $post , $dummy_request );
+
+    return $response->data;
+}
