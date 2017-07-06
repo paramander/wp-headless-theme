@@ -1,6 +1,6 @@
 <?php
 
-add_action( 'rest_api_init', function() {
+add_action( 'rest_api_init', function( $server ) {
     $ns = 'headless/v1';
 
     register_rest_route( $ns, '/frontpage', array(
@@ -91,29 +91,39 @@ add_action( 'rest_api_init', function() {
         }
     ) );
 
-    add_filter( 'acf/format_value/type=post_object', 'headless_theme_prepare_post_object_for_response' , 10, 3 );
-    function headless_theme_prepare_post_object_for_response( $value, $post_id, $field ) {
-        if ( $field['return_format'] !== 'object' ) {
-            return $value;
-        }
-
-        if ( is_array( $value ) ) {
-            $formatted = array();
-            foreach( $value as $post ) {
-                $formatted[] = headless_theme_rest_format_post( $post );
-            }
-
-            return $formatted;
-        } else {
-            return headless_theme_rest_format_post( $value );
-        }
-    };
+    add_filter( 'acf/format_value/type=relationship', 'headless_theme_format_post_object_value', 20, 3 );
+    add_filter( 'acf/format_value/type=post_object', 'headless_theme_format_post_object_value', 20, 3 );
 } );
 
-function headless_theme_rest_format_post( $post ) {
-    $dummy_request = new WP_REST_Request( 'GET', '/' );
-    $dummy_controller = new WP_REST_Posts_Controller( $post->post_type );
-    $response = $dummy_controller->prepare_item_for_response( $post , $dummy_request );
+function headless_theme_format_post_object_value( $value, $post_id, $field ) {
+    if ( $field['return_format'] !== 'object' ) {
+        return $value;
+    }
+    remove_filter( 'acf/format_value/type=relationship', 'headless_theme_format_post_object_value', 20 );
+    remove_filter( 'acf/format_value/type=post_object', 'headless_theme_format_post_object_value', 20 );
 
-    return $response->data;
+    if ( is_array( $value ) ) {
+        foreach( $value as $post ) {
+            $formatted[] = headless_theme_rest_format_post( $post );
+        }
+    } else {
+        $formatted = headless_theme_rest_format_post( $value );
+    }
+
+    add_filter( 'acf/format_value/type=relationship', 'headless_theme_format_post_object_value', 20, 3 );
+    add_filter( 'acf/format_value/type=post_object', 'headless_theme_format_post_object_value', 20, 3 );
+    return $formatted;
+};
+
+function headless_theme_rest_format_post( $post ) {
+    $server = rest_get_server();
+    $controller = new WP_REST_Posts_Controller( $post->post_type );
+    $post_type = get_post_type_object( $post->post_type );
+    $request = WP_REST_Request::from_url( rest_url( sprintf( 'wp/v2/%s/%d', $post_type->rest_base, $post->ID ) ) );
+    $request['context'] = 'embed';
+
+    $response = $server->dispatch( $request );
+	$response = apply_filters( 'rest_post_dispatch', rest_ensure_response( $response ), $server, $request );
+
+	return $server->response_to_data( $response, isset( $_GET['_embed'] ) );
 }
